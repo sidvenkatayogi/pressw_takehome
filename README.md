@@ -2,6 +2,17 @@
 
 A full-stack AI cooking assistant built with **FastAPI + LangGraph** (backend) and **Next.js 16** (frontend). Ask it about recipes, cooking techniques, or ingredients — it'll research, check your available cookware, and give you a tailored response.
 
+### Home
+![Home](docs/home.png)
+
+### Searching
+![Searching](docs/searching.png)
+
+### Output
+![Output](docs/output.png)
+
+---
+
 ## Architecture
 
 ```
