@@ -40,7 +40,8 @@ export function MessageBubble({ message }: { message: Message }) {
     );
   }
 
-  const showFooter = !message.isStreaming && (message.metadata || message.content);
+  const isRecipe = message.metadata?.queryType !== "off_topic" && message.metadata?.queryType !== "unknown";
+  const showFooter = !message.isStreaming && isRecipe && message.content;
 
   return (
     <div className="flex justify-start">

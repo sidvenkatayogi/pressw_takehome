@@ -181,6 +181,20 @@ async def chat_stream(request: ChatRequest):
                                 ),
                             }
                         )
+                    elif name == "refuse_response" and output.get(
+                        "final_response"
+                    ):
+                        refusal = output["final_response"]
+                        final_response = refusal
+                        yield sse(
+                            {"type": "token", "content": refusal}
+                        )
+                        yield sse(
+                            {
+                                "type": "node_end",
+                                "node": name,
+                            }
+                        )
                     else:
                         yield sse(
                             {
