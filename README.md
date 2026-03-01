@@ -169,71 +169,71 @@ The LLM-based cookware check handles synonyms (e.g., "skillet" = "frying pan") a
 
 ## AWS Deployment Plan
 
-### Compute: ECS Fargate
-- **Why Fargate over Lambda**: Persistent connections needed for SSE streaming; Lambda's timeout is too short for long-running recipe generation.
-- **Why not EKS**: Overkill for two services. ECS is simpler to manage and sufficient at this scale.
-- Both services run as ECS services behind an ALB.
+If I were deploying this to production, I'd go with **ECS Fargate** since we already have Dockerfiles and a compose setup — it's a pretty natural progression. Fargate lets me run the containers without managing EC2 instances, which removes a lot of operational overhead. I considered the other options but ruled them out:
+
+- **EKS** — way too much complexity for two services. Kubernetes makes sense at scale, not here.
+- **Lambda** — doesn't play well with SSE streaming since Lambda has hard timeout limits and we need long-lived connections for the chat endpoint.
+- **Raw EC2** — means I'm patching OS, managing instances, setting up auto scaling groups manually. Not worth it.
 
 ### Architecture
-```
-Internet ──► ALB (path-based routing)
-                ├── /api/* ──► ECS Backend Service (Fargate)
-                └── /* ──► ECS Frontend Service (Fargate)
-```
 
-### Secret Management
-- **AWS Secrets Manager** for API keys (OPENAI_API_KEY, TAVILY_API_KEY)
-- Referenced as ECS task definition secrets — injected as env vars at runtime
-- Rotation policies configured for key cycling
+I'd run two ECS services — one for the FastAPI backend, one for the Next.js frontend — each with their own task definition and CPU/memory limits. Container images get pushed to **ECR**.
 
-### Networking
-- VPC with public and private subnets
-- ALB in public subnet, ECS tasks in private subnet
-- Security groups restrict backend to ALB-only traffic
+Both services sit in a **VPC with private subnets**. An **Application Load Balancer** in public subnets handles routing: `/api/*` goes to the backend, everything else goes to the frontend. The ALB also handles TLS termination with an ACM certificate so I don't deal with certs at the application level.
 
 ### Scaling
-- ECS auto-scaling on CPU/memory metrics (target tracking policy)
-- ALB distributes traffic across task replicas
-- Min 1, max 10 tasks per service
+
+**ECS Service Auto Scaling** on both services, using target tracking on CPU at around 70%. For the backend I'd also consider scaling on request count — LLM calls are mostly I/O-bound (waiting on OpenAI), so CPU might not spike even when the service is under heavy load.
+
+### Secret Management
+
+**AWS Secrets Manager** for `OPENAI_API_KEY` and `TAVILY_API_KEY`. ECS task definitions can reference Secrets Manager ARNs directly, so the keys get injected as environment variables at runtime without ever touching the image or plaintext config. I'd pick Secrets Manager over SSM Parameter Store here because it supports automatic key rotation, which matters for API keys. Non-sensitive config like `LOG_LEVEL` or `MODEL_NAME` can live in SSM Parameter Store since it's cheaper.
 
 ### Observability
-- **CloudWatch Logs** with structured JSON logging (production improvement over current plain-text)
-- **CloudWatch Container Insights** for CPU/memory/network metrics
-- **AWS X-Ray** for distributed tracing across frontend → backend → LLM calls
-- Alarms on error rate, latency P99, and LLM API failures
+
+- **Logging**: Swap the dev log formatter for `python-json-logger` in production so logs are structured JSON. CloudWatch Logs picks these up automatically from ECS containers.
+- **Metrics**: Enable CloudWatch Container Insights for CPU/memory/network metrics per service.
+- **Tracing**: Instrument with OpenTelemetry — LangChain already has OTEL integration, so I'd get spans for each LangGraph node and LLM call out of the box. Export traces to AWS X-Ray via the OTEL collector.
+- **Alerts**: CloudWatch Alarms on error rate, p95 latency, and LLM API error counts.
 
 ---
 
 ## Auth & Security Plan
 
-### API Authentication
-- **JWT tokens** via Auth0 or AWS Cognito
-- FastAPI middleware validates JWT on every request
-- Tokens include user ID, expiry, and rate limit tier
+### Authentication
+
+For an MVP, I'd start with **API key authentication** — clients send an `X-API-Key` header, the backend validates against a hashed value stored in Secrets Manager. This is dead simple to implement as FastAPI middleware and works fine for internal or limited-access use.
+
+For a real production version, I'd move to **JWT with OAuth2**. Something like AWS Cognito or Auth0 as the identity provider — the Next.js frontend handles the OAuth login flow, gets a JWT, and passes it as a Bearer token on every request to FastAPI. FastAPI validates the signature and claims. This also gives us user identity, which we'd need anyway if we're tracking per-user recipe data for the ELT pipeline.
 
 ### CORS
-- Production: Restrict to known frontend origin only (e.g., `https://chef-ai.example.com`)
-- No wildcard origins
+
+Lock down FastAPI's `CORSMiddleware` to only allow the frontend's origin (the ALB domain or custom domain). In dev I allow `localhost:3000`, but `allow_origins=["*"]` should never be in production.
 
 ### Rate Limiting
-- **Token bucket per user** via Redis (or API Gateway throttling)
-- Separate limits for streaming vs sync endpoints
-- Anonymous users get lower limits
 
-### Input Validation
-- Pydantic models validate all request bodies
-- Max message length limit (e.g., 10,000 chars)
-- Max conversation history length (e.g., 50 messages)
+Two layers:
 
-### Prompt Injection Mitigation
-- Classification node acts as first line of defense (off-topic queries refused)
-- System prompts instruct model to stay in cooking domain
-- Production: Add dedicated guardrail layer (e.g., Anthropic's constitutional AI or custom classifier)
+1. **ALB / API Gateway level** — baseline request-per-IP limit to catch abuse early.
+2. **Application level** — use `slowapi` (FastAPI rate-limiting library) for per-user limits on the chat endpoint specifically, since every request costs real money in LLM API calls. Something like 20 requests/minute per user feels reasonable as a starting point.
 
-### Key Security
-- API keys in environment variables, never in code
-- Secrets Manager with automatic rotation
-- Backend-only access to LLM keys (frontend never sees them)
+### Input Validation & Prompt Injection
+
+Pydantic handles structural validation already (message format, field types, etc.). On top of that:
+
+- **Max input length** — enforce a 2000 character limit on user messages. No one needs a longer cooking question.
+- **LangGraph as a filter** — the `classify_query` node acts as a natural first line of defense since it determines whether a query is even cooking-related before it hits the main agent.
+- **System prompt guardrails** — the cooking agent's system prompt is scoped tightly to its role, which helps resist injection attempts.
+- For a production system, I'd add a dedicated prompt injection detection layer — libraries like `rebuff` or a fine-tuned small classifier that screens inputs before they reach the LLM.
+
+### Safeguarding API Keys
+
+The main principle: keys never appear in client-side code, Git history, Docker images, or logs.
+
+- All LLM and tool calls go through the backend — the frontend never talks to OpenAI or Tavily directly.
+- Keys live in Secrets Manager and are injected at runtime via ECS task definitions.
+- `.gitignore` and `.dockerignore` both exclude `.env` files.
+- `.env.example` files have placeholder values so anyone cloning the repo knows what's needed without seeing real keys.
 
 ---
 
