@@ -5,16 +5,28 @@ __pycache__/
 dist/
 venv/
 .venv/
-
-# Environment
-.env
-backend/.env
+.ruff_cache/
 
 # Node
 node_modules/
 .next/
-frontend/.next/
-frontend/node_modules/
+/out/
+/build/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
 
 # IDE
 .vscode/
@@ -25,3 +37,15 @@ frontend/node_modules/
 # OS
 .DS_Store
 Thumbs.db
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Testing
+/coverage/
+
+# Vercel
+.vercel

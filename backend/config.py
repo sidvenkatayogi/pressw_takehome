@@ -6,7 +6,7 @@ load_dotenv()
 
 # LLM Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+MODEL_NAME = os.getenv("MODEL_NAME", "gpt-5-mini")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 

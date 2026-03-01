@@ -23,9 +23,9 @@ Building a monorepo containing:
 ## 1. LLM & Model Configuration
 
 ### Model
-- **Primary model**: `gpt-4o-mini` via LangChain's `ChatOpenAI`
+- **Primary model**: `gpt-5-mini` via LangChain's `ChatOpenAI`
 - **Reason**: Fast, cheap, sufficient quality for cooking Q&A. Keeps streaming latency low during development.
-- **Configuration**: Model name set via `MODEL_NAME` env var (default `gpt-4o-mini`) so it's swappable without code changes.
+- **Configuration**: Model name set via `MODEL_NAME` env var (default `gpt-5-mini`) so it's swappable without code changes.
 - **Temperature**: 0.7 for recipe generation (creative), 0.0 for classification (deterministic).
 
 ### LangChain Integration
@@ -428,7 +428,7 @@ services:
 ```
 OPENAI_API_KEY=your-openai-api-key-here
 TAVILY_API_KEY=your-tavily-api-key-here  # Optional, falls back to DuckDuckGo
-MODEL_NAME=gpt-4o-mini
+MODEL_NAME=gpt-5-mini
 LOG_LEVEL=INFO
 ```
 
@@ -505,7 +505,7 @@ These are **documentation-only** sections required by the spec. Write them at th
 - Recipes requiring specialized techniques (sous vide, fermentation) → flag as advanced, note equipment gaps
 
 ### Design Decisions Section for README
-- Why `gpt-4o-mini` over `gpt-4o` (speed/cost for this use case)
+- Why `gpt-5-mini` over `gpt-4o` (speed/cost for this use case)
 - Why multi-node graph over single ReAct agent (visibility, control, testability)
 - Why raw fetch+SSE over `@langchain/langgraph-sdk` / CopilotKit (fewer deps, demonstrates understanding)
 - Why stateless backend (simplicity, scalability)

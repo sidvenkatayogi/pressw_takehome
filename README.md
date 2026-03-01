@@ -154,9 +154,9 @@ curl -X POST http://localhost:8000/api/chat/sync \
 ### Backend (`backend/.env`)
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | Yes | — | OpenAI API key for GPT-4o-mini |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key for GPT-5-mini |
 | `TAVILY_API_KEY` | No | — | Tavily search API key (falls back to DuckDuckGo) |
-| `MODEL_NAME` | No | `gpt-4o-mini` | LLM model name |
+| `MODEL_NAME` | No | `gpt-5-mini` | LLM model name |
 | `LOG_LEVEL` | No | `INFO` | Python logging level |
 
 ### Frontend (`frontend/.env.local`)
@@ -179,7 +179,7 @@ The LLM-based cookware check handles synonyms (e.g., "skillet" = "frying pan") a
 
 | Decision | Choice | Why |
 |----------|--------|-----|
-| LLM Model | `gpt-4o-mini` | Fast, cheap, sufficient for cooking Q&A |
+| LLM Model | `gpt-5-mini` | Fast, cheap, sufficient for cooking Q&A |
 | Multi-node graph vs ReAct agent | 5 separate nodes | Visibility into each step, testability, meets spec requirement for node-based flow |
 | Frontend SSE approach | Raw `fetch` + `ReadableStream` | Fewer dependencies, demonstrates understanding of streaming pattern. Aware of `@langchain/langgraph-sdk` and CopilotKit but chose simplicity |
 | State management | Stateless backend (frontend sends full history) | Simpler, more scalable, no DB needed |
@@ -355,7 +355,7 @@ Track which recipes users are making to give stakeholders a dashboard of cooking
 ## AI Tooling Used
 
 - **Claude Code (Opus 4.6)** — Used for scaffolding, implementation, and documentation. All code was generated with AI assistance and reviewed for correctness.
-- **GPT-4o-mini** — Runtime LLM for the cooking assistant (classification, research, cookware check, response generation).
+- **GPT-5-mini** — Runtime LLM for the cooking assistant (classification, research, cookware check, response generation).
 - **Tavily** — Web search tool integrated via LangChain for recipe research.
 
 ---
