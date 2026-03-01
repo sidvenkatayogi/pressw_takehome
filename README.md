@@ -361,3 +361,6 @@ Built in phases:
 - **No CI/CD pipeline** — Would add GitHub Actions with lint, test, build stages.
 - **Plain-text logging** — Production would use structured JSON logging with request IDs.
 - **No conversation persistence** — Stateless by design; would add Redis or PostgreSQL for production.
+
+## Potential feature
+ - Agent that searches for and adds all necessary ingredients into a shopping cart (Amazon, HEB, Instacart, etc)
