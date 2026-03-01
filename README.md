@@ -380,3 +380,5 @@ Built in phases:
 
 ## Potential feature
  - Agent that searches for and adds all necessary ingredients into a shopping cart (Amazon, HEB, Instacart, etc)
+ - Validate dietary restrictions similar to cookware
+ - Sliders to adjust serving sizes
