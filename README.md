@@ -345,8 +345,12 @@ Track which recipes users are making to give stakeholders a dashboard of cooking
 │   └── package.json
 ├── docker-compose.yml
 ├── Makefile
-├── DESIGN_DECISIONS.md
-├── SPEC.md
+├── docs/
+│   ├── DESIGN_DECISIONS.md
+│   ├── SPEC.md
+│   ├── home.png
+│   ├── searching.png
+│   └── output.png
 └── README.md
 ```
 
