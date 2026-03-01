@@ -4,6 +4,14 @@ import { useCallback, useReducer } from "react";
 import { sendChatStream } from "@/lib/api";
 import type { Message, SSEEvent } from "@/lib/types";
 
+const NODE_LABELS: Record<string, string> = {
+  classify_query: "Understanding your question...",
+  research_agent: "Researching recipes...",
+  cookware_check: "Checking your cookware...",
+  generate_response: "Writing response...",
+  refuse_response: "Composing response...",
+};
+
 type State = {
   messages: Message[];
   isLoading: boolean;
@@ -14,6 +22,7 @@ type Action =
   | { type: "ADD_USER_MESSAGE"; message: Message }
   | { type: "ADD_ASSISTANT_PLACEHOLDER"; id: string }
   | { type: "APPEND_TOKEN"; id: string; content: string }
+  | { type: "SET_STATUS"; id: string; statusMessage: string }
   | {
       type: "FINALIZE_ASSISTANT";
       id: string;
@@ -40,15 +49,25 @@ function reducer(state: State, action: Action): State {
             role: "assistant",
             content: "",
             isStreaming: true,
+            statusMessage: "Thinking...",
           },
         ],
+      };
+    case "SET_STATUS":
+      return {
+        ...state,
+        messages: state.messages.map((m) =>
+          m.id === action.id
+            ? { ...m, statusMessage: action.statusMessage }
+            : m
+        ),
       };
     case "APPEND_TOKEN":
       return {
         ...state,
         messages: state.messages.map((m) =>
           m.id === action.id
-            ? { ...m, content: m.content + action.content }
+            ? { ...m, content: m.content + action.content, statusMessage: undefined }
             : m
         ),
       };
@@ -57,7 +76,7 @@ function reducer(state: State, action: Action): State {
         ...state,
         messages: state.messages.map((m) =>
           m.id === action.id
-            ? { ...m, isStreaming: false, metadata: action.metadata }
+            ? { ...m, isStreaming: false, statusMessage: undefined, metadata: action.metadata }
             : m
         ),
       };
@@ -93,7 +112,6 @@ export function useChat() {
       const assistantId = crypto.randomUUID();
       dispatch({ type: "ADD_ASSISTANT_PLACEHOLDER", id: assistantId });
 
-      // Build payload from existing messages + new user message
       const payload = [...state.messages, userMsg].map((m) => ({
         role: m.role,
         content: m.content,
@@ -104,6 +122,22 @@ export function useChat() {
 
         await sendChatStream(payload, (event: SSEEvent) => {
           switch (event.type) {
+            case "node_start": {
+              const label = NODE_LABELS[event.node] || `Processing...`;
+              dispatch({
+                type: "SET_STATUS",
+                id: assistantId,
+                statusMessage: label,
+              });
+              break;
+            }
+            case "tool_call":
+              dispatch({
+                type: "SET_STATUS",
+                id: assistantId,
+                statusMessage: "Searching the web...",
+              });
+              break;
             case "token":
               dispatch({
                 type: "APPEND_TOKEN",

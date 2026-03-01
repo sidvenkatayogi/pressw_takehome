@@ -20,7 +20,7 @@ export function MessageBubble({ message }: { message: Message }) {
     <div className="flex justify-start">
       <Card className="max-w-[80%] rounded-2xl rounded-bl-sm border-slate-200 bg-white px-4 py-2.5 shadow-sm">
         {message.isStreaming && !message.content ? (
-          <LoadingIndicator />
+          <LoadingIndicator message={message.statusMessage} />
         ) : (
           <div className="markdown-body max-w-none text-sm text-slate-700">
             <Markdown>{message.content}</Markdown>

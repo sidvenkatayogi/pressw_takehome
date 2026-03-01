@@ -1,6 +1,5 @@
 FROM node:20-alpine AS base
 
-# Install bun
 RUN npm install -g bun
 
 # --- Dependencies ---
@@ -16,6 +15,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_ vars must be set at build time
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN bun run build
 

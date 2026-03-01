@@ -66,4 +66,5 @@ export type Message = {
     missingCookware?: string[];
   };
   isStreaming?: boolean;
+  statusMessage?: string;
 };
