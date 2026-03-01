@@ -16,14 +16,26 @@ A full-stack AI cooking assistant built with **FastAPI + LangGraph** (backend) a
 ## Architecture
 
 ```
-User ──► Next.js Chat UI ──► FastAPI ──► LangGraph Pipeline ──► GPT-4o-mini
-                                              │
-                              ┌───────────────┼───────────────┐
-                              ▼               ▼               ▼
-                        classify_query   research_agent   cookware_check
-                              │               │               │
-                              ▼               ▼               ▼
-                        refuse_response  (web search)   generate_response
+User ──► Next.js Chat UI ──► FastAPI ──► LangGraph Pipeline
+                                                  │
+                                                START
+                                                  │
+                                                  ▼
+                                           classify_query
+                                             │        │
+                                      (off-topic)  (cooking-related)
+                                             │        │
+                                             ▼        ▼
+                                     refuse_response  research_agent ◄──► web search (Tavily/DDG)
+                                             │        │
+                                             ▼        ▼
+                                            END    cookware_check
+                                                      │
+                                                      ▼
+                                                generate_response
+                                                      │
+                                                      ▼
+                                                     END
 ```
 
 **LangGraph Flow (5 nodes):**
