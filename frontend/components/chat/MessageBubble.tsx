@@ -22,7 +22,7 @@ export function MessageBubble({ message }: { message: Message }) {
         {message.isStreaming && !message.content ? (
           <LoadingIndicator />
         ) : (
-          <div className="prose prose-sm prose-slate max-w-none text-sm leading-relaxed">
+          <div className="markdown-body max-w-none text-sm text-slate-700">
             <Markdown>{message.content}</Markdown>
           </div>
         )}
